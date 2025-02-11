@@ -1,7 +1,7 @@
 import "server-only";
 
 import { genSaltSync, hashSync } from "bcrypt-ts";
-import { and, asc, desc, eq, gt, gte } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -15,6 +15,8 @@ import {
   type Message,
   message,
   vote,
+  event,
+  type Event,
 } from "./schema";
 import { BlockKind } from "@/components/block";
 
@@ -334,6 +336,87 @@ export async function updateChatVisiblityById({
     return await db.update(chat).set({ visibility }).where(eq(chat.id, chatId));
   } catch (error) {
     console.error("Failed to update chat visibility in database");
+    throw error;
+  }
+}
+
+export async function saveEvent({
+  id,
+  title,
+  description,
+  userId,
+  type,
+  status,
+  priority,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  userId: string;
+  type: "alert" | "jira";
+  status: "open" | "closed";
+  priority: "low" | "medium" | "high" | "critical";
+}) {
+  try {
+    return await db.insert(event).values({
+      id,
+      createdAt: new Date(),
+      title,
+      description,
+      userId,
+      type,
+      status,
+      priority,
+    });
+  } catch (error) {
+    console.error("Failed to save event in database");
+    throw error;
+  }
+}
+
+interface QueryProps {
+  [key: string]: any;
+}
+
+export async function getTotal({ queryConditions }: QueryProps) {
+  try {
+    const queryBuilder = db.select({ count: count() }).from(event);
+    if (queryConditions && Object.keys(queryConditions).length > 0) {
+      queryBuilder.where(queryConditions);
+    }
+    const result = await queryBuilder;
+    return result[0]?.count ?? 0;
+  } catch (error) {
+    console.error("Failed to get total from database");
+    throw error;
+  }
+}
+
+interface getEventsProps {
+  pageSize: number;
+  pageIndex: number;
+  queryConditions: any;
+}
+
+export async function getEvents({
+  pageSize,
+  pageIndex,
+  queryConditions,
+}: getEventsProps) {
+  try {
+    const queryBuilder = db
+      .select()
+      .from(event)
+      .orderBy(desc(event.createdAt))
+      .offset(pageIndex * pageSize)
+      .limit(pageSize);
+    if (queryConditions && Object.keys(queryConditions).length > 0) {
+      queryBuilder.where(queryConditions);
+    }
+    const events = await queryBuilder;
+    return events;
+  } catch (error) {
+    console.error("Failed to get events from database");
     throw error;
   }
 }

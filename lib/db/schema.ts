@@ -66,6 +66,44 @@ export const vote = pgTable(
 
 export type Vote = InferSelectModel<typeof vote>;
 
+export const event = pgTable(
+  "Event",
+  {
+    id: uuid("id").notNull().defaultRandom(),
+    createdAt: timestamp("createdAt").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    type: varchar("type", {
+      enum: ["alert", "jira"],
+    }).notNull(),
+    status: varchar("status", {
+      enum: [
+        "open",
+        "ready",
+        "investigating",
+        "analysis",
+        "pending",
+        "notify",
+        "closed",
+        "review",
+        "escalation",
+        "re-open",
+      ],
+    }).notNull(),
+    priority: varchar("priority", {
+      enum: ["low", "medium", "high", "critical"],
+    }).notNull(),
+    userId: uuid("userId")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id] }),
+  })
+);
+
+export type Event = InferSelectModel<typeof event>;
+
 export const document = pgTable(
   "Document",
   {
@@ -73,7 +111,7 @@ export const document = pgTable(
     createdAt: timestamp("createdAt").notNull(),
     title: text("title").notNull(),
     content: text("content"),
-    kind: varchar("text", { enum: ["text", "code"] })
+    kind: varchar("text", { enum: ["text", "code", "event"] })
       .notNull()
       .default("text"),
     userId: uuid("userId")

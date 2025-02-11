@@ -1,4 +1,5 @@
-import { BlockKind } from '@/components/block';
+import { BlockKind } from "@/components/block";
+import { type Event } from "../db/schema";
 
 export const blocksPrompt = `
 Blocks is a special user interface mode that helps users with writing, editing, and other content creation tasks. When block is open, it is on the right side of the screen, while the conversation is on the left side. When creating or updating documents, changes are reflected in real-time on the blocks and visible to the user.
@@ -14,6 +15,7 @@ This is a guide for using blocks tools: \`createDocument\` and \`updateDocument\
 - For content users will likely save/reuse (emails, code, essays, etc.)
 - When explicitly requested to create a document
 - For when content contains a single code snippet
+- When events are related to the content
 
 **When NOT to use \`createDocument\`:**
 - For informational/explanatory content
@@ -31,8 +33,7 @@ This is a guide for using blocks tools: \`createDocument\` and \`updateDocument\
 Do not update document right after creating it. Wait for user feedback or request to update it.
 `;
 
-export const regularPrompt =
-  'You are a friendly assistant! Keep your responses concise and helpful.';
+export const regularPrompt = `You are a friendly assistant! Keep your responses concise and helpful.`;
 
 export const systemPrompt = `${regularPrompt}\n\n${blocksPrompt}`;
 
@@ -64,20 +65,46 @@ print(f"Factorial of 5 is: {factorial(5)}")
 \`\`\`
 `;
 
+export const eventPrompt = `
+  I would like to handle special requests from the user. Please refer to the following content. 
+
+  Create the content in the following JSON format:
+
+    The keys to define in the JSON will be completed by referring to ${Event}.
+    We will complete the JSON based on the user input.
+
+    I'll show you a few examples related to this.
+
+    Q. If asked to show only Jira type events, output the following JSON:
+    A.
+    {
+      "type": "jira"
+    }
+
+    Q. If asked to show only those with type alert and status ready:
+    A.
+    {
+      "type": "alert",
+      "status": "ready"
+    }
+
+    Provide the answer in JSON like this.
+`;
+
 export const updateDocumentPrompt = (
   currentContent: string | null,
-  type: BlockKind,
+  type: BlockKind
 ) =>
-  type === 'text'
+  type === "text"
     ? `\
 Improve the following contents of the document based on the given prompt.
 
 ${currentContent}
 `
-    : type === 'code'
-      ? `\
+    : type === "code"
+    ? `\
 Improve the following code snippet based on the given prompt.
 
 ${currentContent}
 `
-      : '';
+    : "";
